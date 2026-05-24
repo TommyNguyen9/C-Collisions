@@ -95,7 +95,13 @@ public:
 					tv.DrawLine(vTile + olc::vf2d(0.0f, 1.0f), vTile + olc::vf2d(1.0f, 0.0f), olc::WHITE);
 				}
 			}
+		
+		// Draw Boundary:
+		tv.DrawCircle(object.vPos, object.fRadius, olc::WHITE);
 
+		// Draw Velocity:
+		if (object.vVel.mag2() > 0)
+			tv.DrawLine(object.vPos, object.vPos + object.vVel.norm() * object.fRadius, olc::MAGENTA);
 
 		return true;
 	}
