@@ -71,6 +71,14 @@ public:
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
+		// Control of player object
+		object.vVel = { 0.0f, 0.0f };
+		if (GetKey(olc::Key::W).bHeld) object.vVel += olc::vf2d{0.0f, -1.0f};
+		if (GetKey(olc::Key::S).bHeld) object.vVel += olc::vf2d{ 0.0f, +1.0f };
+		if (GetKey(olc::Key::A).bHeld) object.vVel += olc::vf2d{ -1.0f, 0.0f };
+		if (GetKey(olc::Key::A).bHeld) object.vVel += olc::vf2d{ +1.0f, 0.0f };
+
+
 		// Pan & Zoom:
 		if (GetMouse(2).bPressed) tv.StartPan(GetMousePos());
 		if (GetMouse(2).bHeld) tv.UpdatePan(GetMousePos());
