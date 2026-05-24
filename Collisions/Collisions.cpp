@@ -90,7 +90,9 @@ public:
 			{
 				if (sWorldMap[vTile.y * vWorldSize.x + vTile.x] == '#')
 				{
-
+					tv.DrawRect(vTile, { 1.0f, 1.0f }, olc::WHITE);
+					tv.DrawLine(vTile, vTile + olc::vf2d(1.0f, 1.0f), olc::WHITE); // Drawing diagonals
+					tv.DrawLine(vTile + olc::vf2d(0.0f, 1.0f), vTile + olc::vf2d(1.0f, 0.0f), olc::WHITE);
 				}
 			}
 
