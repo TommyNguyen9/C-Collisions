@@ -59,6 +59,7 @@ private:
 		"################################";
 
 	olc::vi2d vWorldSize = { 32, 32 };
+	bool bFollowObject = false;
 
 
 public:
@@ -71,23 +72,78 @@ public:
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
+		if (GetKey(olc::Key::SPACE).bReleased) bFollowObject = !bFollowObject; // Flip the value of object
+
 		// Control of player object
 		object.vVel = { 0.0f, 0.0f };
-		if (GetKey(olc::Key::W).bHeld) object.vVel += olc::vf2d{0.0f, -1.0f};
+		if (GetKey(olc::Key::W).bHeld) object.vVel += olc::vf2d{ 0.0f, -1.0f};
 		if (GetKey(olc::Key::S).bHeld) object.vVel += olc::vf2d{ 0.0f, +1.0f };
 		if (GetKey(olc::Key::A).bHeld) object.vVel += olc::vf2d{ -1.0f, 0.0f };
-		if (GetKey(olc::Key::A).bHeld) object.vVel += olc::vf2d{ +1.0f, 0.0f };
+		if (GetKey(olc::Key::D).bHeld) object.vVel += olc::vf2d{ +1.0f, 0.0f };
+
+		if (object.vVel.mag2() > 0)
+			object.vVel = object.vVel.norm() * (GetKey(olc::Key::SHIFT).bHeld ? 5.0f : 2.0f);
+
+		olc::vf2d vPotentialPosition = object.vPos + object.vVel * fElapsedTime;
+
+		// Extract region of world cells that could have a collision this frame
+		olc::vi2d vCurrentCell = object.vPos.floor();
+		olc::vi2d vTargetCell = vPotentialPosition;
+		olc::vi2d vAreaTL = (vCurrentCell.min(vTargetCell) - olc::vi2d(1, 1)).max({ 0,0 });
+		olc::vi2d vAreaBR = (vCurrentCell.max(vTargetCell) + olc::vi2d(1, 1)).min(vWorldSize);
+
+		// Iterate through each cell in test area:
+		olc::vi2d vCell;
+		for (vCell.y = vAreaTL.y; vCell.y <= vAreaBR.y; vCell.y++)
+		{
+			for (vCell.x = vAreaTL.x; vCell.x <= vAreaBR.x; vCell.x++)
+			{
+				if (sWorldMap[vCell.y * vWorldSize.x + vCell.x] == '#')
+				{
+					olc::vf2d vNearestPoint;
+					vNearestPoint.x = std::max(float(vCell.x), std::min(vPotentialPosition.x, float(vCell.x + 1)));
+					vNearestPoint.y = std::max(float(vCell.y), std::min(vPotentialPosition.y, float(vCell.y + 1)));
+
+					olc::vf2d vRayToNearest = vNearestPoint - vPotentialPosition;
+					float fOverlap = object.fRadius - vRayToNearest.mag();
+
+					if (std::isnan(fOverlap)) fOverlap = 0;
+
+					if (fOverlap > 0)
+					{
+						vPotentialPosition = vPotentialPosition - vRayToNearest.norm() * fOverlap;
+
+					}
+				}
+			}
+		}
 
 
-		// Pan & Zoom:
-		if (GetMouse(2).bPressed) tv.StartPan(GetMousePos());
-		if (GetMouse(2).bHeld) tv.UpdatePan(GetMousePos());
-		if (GetMouse(2).bReleased) tv.EndPan(GetMousePos());
-		if (GetMouseWheel() > 0) tv.ZoomAtScreenPos(2.0f, GetMousePos());
-		if (GetMouseWheel() < 0) tv.ZoomAtScreenPos(0.5f, GetMousePos());
+
+
+
+		object.vPos = vPotentialPosition;
 
 		// Clear world
 		Clear(olc::VERY_DARK_BLUE);
+
+		// Pan & Zoom:
+		if (bFollowObject)
+		{
+			DrawString({ 10, 10 }, "Following Object");
+			tv.SetWorldOffset(object.vPos - tv.ScaleToWorld(olc::vf2d(ScreenWidth() / 2.0f, ScreenHeight() / 2.0f)));
+		}
+		else
+		{
+			if (GetMouse(2).bPressed) tv.StartPan(GetMousePos());
+			if (GetMouse(2).bHeld) tv.UpdatePan(GetMousePos());
+			if (GetMouse(2).bReleased) tv.EndPan(GetMousePos());
+		}
+		
+		if (GetMouseWheel() > 0) tv.ZoomAtScreenPos(2.0f, GetMousePos());
+		if (GetMouseWheel() < 0) tv.ZoomAtScreenPos(0.5f, GetMousePos());
+
+	
 		
 		// Draw world:
 		olc::vi2d vTL = tv.GetTopLeftTile().max({ 0, 0 });
@@ -104,6 +160,8 @@ public:
 				}
 			}
 		
+		tv.FillRectDecal(vAreaTL, vAreaBR - vAreaTL + olc::vi2d(1, 1), olc::Pixel(0, 255, 255, 32));
+
 		// Draw Boundary:
 		tv.DrawCircle(object.vPos, object.fRadius, olc::WHITE);
 
