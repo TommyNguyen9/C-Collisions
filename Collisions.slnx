@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="Collisions/Collisions.vcxproj" />
+  <Project Path="Collisions/Collisions.vcxproj" Id="5e5edd69-6b14-48ea-804f-cda846253fb3" />
 </Solution>
